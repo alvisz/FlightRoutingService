@@ -1,0 +1,49 @@
+version: '3.9'
+services:
+  postgres:
+    image: pgrouting/pgrouting:13-3.0-master
+    restart: always
+    user: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - '5438:5432'
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      # Copy the sql scripts
+      - ./sql/01_tables.sql:/docker-entrypoint-initdb.d/01_tables.sql
+      - ./sql/02_airports.sql:/docker-entrypoint-initdb.d/02_airports.sql
+      - ./sql/03_routes.sql:/docker-entrypoint-initdb.d/03_routes.sql
+      - ./sql/04_functions.sql:/docker-entrypoint-initdb.d/04_functions.sql
+  routerapi:
+    build: .
+    command: npm run start
+    restart: always
+    volumes:
+      - .:/usr/app/
+      - /usr/app/node_modules
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: [ "CMD", "curl --fail http://localhost:3000/healthcheck || kill 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres

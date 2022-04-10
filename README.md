@@ -28,7 +28,13 @@ cp .env.example .env
 ```
 docker-compose up -d postgres
 ```
-3. Run the service in dev mode
+3. Install the packages
+
+```
+npm install
+```
+
+4. Run the service in dev mode
 
 ```
 npm run dev
